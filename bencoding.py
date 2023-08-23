@@ -45,6 +45,8 @@ def decode(file_bytes):
         file_bytes = file_bytes[1:]
         return l, file_bytes
     elif file_bytes[:1] == b'd':
+        # TODO: All keys must be byte strings and must appear in
+        # lexicographical order
         d = {}
         file_bytes = file_bytes[1:]
         while file_bytes[:1] != b'e':
