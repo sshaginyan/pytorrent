@@ -19,6 +19,8 @@ def _parse_string(file_bytes):
 
 # TODO: Complete encode function
 def encode(struct):
+    
+    # TODO: Add docstring
     '''
         Description of encode function
     '''
