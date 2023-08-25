@@ -1,38 +1,64 @@
+import urllib.parse
+import aiohttp
 import requests
+import asyncio
+from peer import Peer
 from pprint import pprint
 from bencoding import decode, encode
+from collections import namedtuple
+
+SockAddr = namedtuple('SockAddr', ['ip', 'port', 'allowed'])
 
 class Tracker:
     def __init__(self, torrent_file):
         self.torrent_file = torrent_file
-        self.get_peers()
-        self.tracker_URL = None
-
-    def get_peers(self):
-        for a in self.torrent_file.announce_list: 
-            if a.startswith(b'https://academictorren'):
-                self.tracker_URL = a
-
-        # print(self) 
-        self.http_request()
+        self.dict_sock_addr = {}
+        self.tracker_url = 'https://academictorrents.com/announce.php'
         
+    async def get_peers(self):
+        await self.http_request()
+        # self.try_peer_connect()
 
-    def http_request(self):
-        # print("info hash is: ", self.torrent_file.info_hashed)
-        params = {'info_hash': self.torrent_file.info_hashed,
-                    # 'peer_id': b'u{U\x07\x98p\x97\xc4V\x8f\xbe\xe4\x80\xe7\xe9\x84\x15\x03\xaa\x90',
-                    'peer_id' : self.torrent_file.peer_id,
-                    'upload': 0,
-                    'download': 0,
-                    'left': 2601915325,
-                    'event': 'started',
-                    'port': 6881
-                  }
-        response = requests.get(self.tracker_URL, params = params, timeout= 10)
-        list_peers  = decode(response.content)  
-        pprint(list_peers)
+    async def http_request(self):
+        params = urllib.parse.urlencode({
+            'upload': 0,
+            'port': 6881,
+            'download': 0,
+            'event': 'started',
+            'peer_id' : self.torrent_file.peer_id,
+            'left': self.torrent_file.total_length,
+            'info_hash': self.torrent_file.info_hash
+        })
         
+        # response = requests.get(self.tracker_url, params = params, timeout= 10)
+        # print(response.request.url)
 
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.tracker_url+'?'+params) as response:
+                binary_data = await response.read()
+        peers = decode(binary_data)
+        pprint(peers)
+
+        
+        
+        # async with httpx.AsyncClient() as client:
+        #     response = await client.get(self.tracker_url, params=params)
+        # print(response.content)
+
+        # response = requests.get(url=self.tracker_url, params=params, timeout=10)
+        # list_peers = decode(response.content)
+        
+        # pprint(list_peers)
+        
+        # for peer in list_peers[b'peers']:
+        #     sock_addr = SockAddr(peer[b'ip'], peer[b'port'], allowed = True)
+        #     self.dict_sock_addr[str(peer[b'ip'])+ ':' + str(peer[b'port'])] = sock_addr
+    
+    def try_peer_connect(self):
+        with asyncio.TaskGroup as tg:
+            for peer in self.dict_sock_addr.values():
+                tg.create_task(Peer().check_peer_connection(peer))
+        
 
 
             

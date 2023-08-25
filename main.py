@@ -1,11 +1,15 @@
+import asyncio
 import hashlib
 import urllib.parse
 from bencoding import encode, decode
 from torrent_file import TorrentFile
 from tracker import Tracker
 
-torrent = TorrentFile('Artificial_Intelligence.torrent')
-tracker = Tracker(torrent)
+torrent_file = TorrentFile('Artificial_Intelligence.torrent')
+tracker = Tracker(torrent_file)
+asyncio.run(tracker.get_peers())
+
+
 # print(Torrent)
 
 # sha1 = hashlib.sha1()

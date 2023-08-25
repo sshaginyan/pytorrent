@@ -1,61 +1,40 @@
 import os
+#TODO: We're not using this library, but we need too
 import urllib.parse
-import secrets
-
-from bencoding import encode, decode
 from hashlib import sha1
+from pprint import pprint
+from bencoding import encode, decode
+
 
 class TorrentFile:
     def __init__(self, path):
-        # for key, value in self._read_torrent_file(path).items():
-        #     setattr(self, key , value)
-        t_file = self._read_torrent_file(path)
-        self.info_hashed = self._get_info_hash(t_file[b'info'])
-        self.peer_id = self._generate_peer_ID()
-        self.announce_list = {t_file[b'announce'] , *{item[0] for item in t_file[b'announce-list']}}
-        # for a in self.announce_list: 
-        #     print(a)
+        d_file = self._read_file(path)
+        self.peer_id = self._generate_peer_id()
+        self.info_hash = self._get_info_hash(d_file[b'info'])
+        self.total_length = self._get_total_length(d_file[b'info'][b'files'])
+        self.announce_list = self._get_announce_list(d_file[b'announce'], d_file[b'announce-list'])
 
-    def _read_torrent_file(self, path):
-        with open(path, 'rb') as fd:
-            file_bytes = fd.read()
-
-        decoded_file = decode(file_bytes)
-        return decoded_file
+    def _read_file(self, path):
+        with open(path, 'rb') as file:
+            file_bytes = file.read()
+        return decode(file_bytes)
           
     def _get_info_hash(self, info):
+        print(sha1(encode(info)).digest())
         return sha1(encode(info)).digest()
     
-    def _get_announce_list(self, announce_URL, announce_list): 
-        if not announce_URL in announce_list: 
-            announce_list.append(announce_URL)
-        return announce_list
+    def _get_announce_list(self, announce_url, announce_list): 
+        return {announce_url , *{url for [url] in announce_list}}
     
-    # def _generate_peer_ID(self):
-        # rand = os.urandom(20)
-        # # hex_rand = rand.hex()
-        # return rand
+    def _get_total_length(self, files):
+        total_length = 0
+        for file in files:
+            total_length += file[b'length']
+        return total_length
 
-
-
-    def _generate_peer_ID(self):
-        # This is just a placeholder; use your client's prefix
+    def _generate_peer_id(self):
+        # TODO: Why is this prefix used?
         client_prefix = '-XY0001-'
         unique_id = os.urandom(20 - len(client_prefix))
         peer_id = client_prefix.encode() + unique_id
         return peer_id
-
-    def generate_encoded_peer_id(self):
-        peer_id = self._generate_peer_ID()
-        return urllib.parse.quote_plus(peer_id)
-
-    # print(generate_encoded_peer_id())
-
-    
-
-
-
-    
-
-            
-
