@@ -57,16 +57,13 @@ class TrackerProtocol:
         if len(data) == 16:
             action, transaction_id, connection_id = struct.unpack('!IIQ', data)
             self.connection_id = connection_id
-            print(action, transaction_id, connection_id)
         elif len(data) >= 20:
             n = len(data) - 20
             fixed_format = '!IIIII'
             peers_format = f'{n}s'
             format_string = fixed_format + peers_format
-            print(format_string)
             unpacked_data = struct.unpack(format_string, data)
             action, transaction_id, interval, leechers, seeders = unpacked_data[:5]
-            print("action: ", action)
             peers_data = unpacked_data[5]
             peers = []
             for i in range(0, len(peers_data), 6):
@@ -74,7 +71,6 @@ class TrackerProtocol:
                 port_bytes = peers_data[i+4:i+6]
                 
                 ip = '.'.join(map(str, ip_bytes))
-                print(port_bytes)
                 port = struct.unpack('!H', port_bytes)[0]
                 
                 peers.append((ip, port))
