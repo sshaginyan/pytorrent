@@ -1,7 +1,6 @@
-import sys
-import asyncio
 import struct
 import random
+import asyncio
 
 async def communicate_with_tracker(tracker_address, left, info_hash, peer_id):
     loop = asyncio.get_running_loop()
@@ -23,12 +22,14 @@ class TrackerProtocol:
         self.transport = None
         self.transaction_id = random.randint(0, 0xFFFFFFFF)
         self.connection_id = 0x41727101980
+        self.connect_event = asyncio.Event()
+        self.announce_event = asyncio.Event() 
 
     async def on_connection_made(self):
         action = 0
         connect_request = struct.pack("!QII", self.connection_id, action, self.transaction_id)
         self.transport.sendto(connect_request)
-        await asyncio.sleep(2)
+        await self.connect_event.wait()
 
     async def on_announce(self, lefty):
         action = 1
@@ -42,7 +43,7 @@ class TrackerProtocol:
         port = 6881
         announce_request = struct.pack("!QII20s20sQQQIIIiH", self.connection_id, action, self.transaction_id, self.info_hash, self.peer_id, downloaded, left, uploaded, event, ip, key, num_want, port)
         self.transport.sendto(announce_request)
-        await asyncio.sleep(2)
+        await self.announce_event.wait()
 
     def connection_made(self, transport):
         self.transport = transport
@@ -57,6 +58,7 @@ class TrackerProtocol:
         if len(data) == 16:
             action, transaction_id, connection_id = struct.unpack('!IIQ', data)
             self.connection_id = connection_id
+            self.connect_event.set()
         elif len(data) >= 20:
             n = len(data) - 20
             fixed_format = '!IIIII'
@@ -75,12 +77,13 @@ class TrackerProtocol:
                 
                 peers.append((ip, port))
             print(peers)
+            self.announce_event.set()
 
 def main():
     
-    # tracker_address = ('explodie.org', 6969)
-    # left = 276445467
-    # info_hash = b'\xdd\x82U\xec\xdc|\xa5_\xb0\xbb\xf8\x13#\xd8pb\xdb\x1fm\x1c'
+    tracker_address = ('explodie.org', 6969)
+    left = 276445467
+    info_hash = b'\xdd\x82U\xec\xdc|\xa5_\xb0\xbb\xf8\x13#\xd8pb\xdb\x1fm\x1c'
     
     # tracker_address = ('tracker.opentrackr.org', 1337)
     # left = 2601915325
@@ -90,9 +93,9 @@ def main():
     # left = 318239939300
     # info_hash = b'_\x96\xd45v\xe3\xd3\x86\xc9\xbae\xb8\x83!\n9;h!\x0e'
     
-    tracker_address = ('open.stealth.si', 80)
-    left = 1722402549
-    info_hash = b'+\x17Y\xfc\xfd\x9a\x18p\x95]\xba\x85\xbf\x1fk\xbf\x82\x0eD\xd6'
+    # tracker_address = ('open.stealth.si', 80)
+    # left = 1722402549
+    # info_hash = b'+\x17Y\xfc\xfd\x9a\x18p\x95]\xba\x85\xbf\x1fk\xbf\x82\x0eD\xd6'
 
     peer_id = b"-PT010-\xf2;\xc6\x9d'\x82r\x01X\xbf\x1b*\x98"
     asyncio.run(communicate_with_tracker(tracker_address, left, info_hash, peer_id))
