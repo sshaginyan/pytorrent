@@ -22,7 +22,6 @@ class TrackerProtocol:
         self.peer_id = peer_id
         self.info_hash = info_hash
         
-        
         self.transaction_id = random.randint(0, 0xFFFFFFFF)
         self.connection_id = 0x41727101980
         self.event = asyncio.Event()

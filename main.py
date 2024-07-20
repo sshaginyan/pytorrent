@@ -1,24 +1,26 @@
-import asyncio
-import hashlib
-import urllib.parse
-from bencoding import encode, decode
+# https://github.com/Textualize/textual
+import asyncio # Don't need this for now
 from torrent_file import TorrentFile
 from tracker import Tracker
+from pprint import pprint
+import bencode
 
-torrent_file = TorrentFile('Artificial_Intelligence.torrent')
-tracker = Tracker(torrent_file)
-asyncio.run(tracker.get_peers())
+async def main():
+    # torrent_file = TorrentFile('Artificial_Intelligence.torrent')
+    torrent_file = TorrentFile('torrents/Artificial_Intelligence.torrent')
+    tracker = Tracker(torrent_file)
+    peers = await tracker.get_peers()
+    print(peers)
+    # pprint(bencode.decode(peers))
+
+    # while not pieces_manager.all_pieces_completed():
+    #     for piece in self.pieces_manager.pieces:
+    #         index = piece.piece_index
+
+    #         if pieces_manager.pieces[index].is_full:
+    #             continue
+       
 
 
-# print(Torrent)
-
-# sha1 = hashlib.sha1()
-
-# with open('Artificial_Intelligence.torrent', 'rb') as fd:
-#     a = fd.read()
-#     a = decode(a)
-#     a = a[b'info']
-#     a = encode(a)
-#     a = urllib.parse.quote(a)
-#     sha1.update(a.encode())
-#     print(sha1.hexdigest())
+if __name__ == '__main__':
+    asyncio.run(main())

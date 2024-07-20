@@ -1,40 +1,67 @@
+import re
 import os
-#TODO: We're not using this library, but we need too
-import urllib.parse
-from hashlib import sha1
-from pprint import pprint
-from bencoding import encode, decode
-
+import math
+import bencode
+import hashlib
+import functools
 
 class TorrentFile:
     def __init__(self, path):
-        d_file = self._read_file(path)
-        self.peer_id = self._generate_peer_id()
-        self.info_hash = self._get_info_hash(d_file[b'info'])
-        self.total_length = self._get_total_length(d_file[b'info'][b'files'])
-        self.announce_list = self._get_announce_list(d_file[b'announce'], d_file[b'announce-list'])
+        bencoded_torrent_data = self._read_file(path)
+        torrent_data = bencode.decode(bencoded_torrent_data)
+        
+        for key, value in torrent_data.items():
+            key = key.decode('utf-8')
+            setattr(self, "_" + re.sub(r"[ -]", "_", key), value)
 
     def _read_file(self, path):
         with open(path, 'rb') as file:
-            file_bytes = file.read()
-        return decode(file_bytes)
-          
-    def _get_info_hash(self, info):
-        print(sha1(encode(info)).digest())
-        return sha1(encode(info)).digest()
+            return file.read()
+
+    @property
+    def info_hash(self):
+        return hashlib.sha1(bencode.encode(self._info)).digest()
     
-    def _get_announce_list(self, announce_url, announce_list): 
-        return {announce_url , *{url for [url] in announce_list}}
+    @property
+    @functools.cache
+    def announce_list(self):
+        self._announce_list.append([self._announce])
+        return self._announce_list
     
-    def _get_total_length(self, files):
+    @property
+    def total_length(self):
         total_length = 0
-        for file in files:
+        for file in self._info[b'files']:
             total_length += file[b'length']
         return total_length
-
-    def _generate_peer_id(self):
-        # TODO: Why is this prefix used?
-        client_prefix = '-XY0001-'
+    
+    @property
+    def number_of_pieces(self):
+        return math.ceil(self.total_length / self._info[b"piece length"])
+    
+    @property
+    def peer_id(self):
+        client_prefix = '-PT010-'
         unique_id = os.urandom(20 - len(client_prefix))
         peer_id = client_prefix.encode() + unique_id
         return peer_id
+    
+    # def create_files(self, torrent_file):
+    #     root = torrent_file[b'info'][b'name']
+
+    #     if b'files' in torrent_file[b'info']:
+    #         if not os.path.exists(root):
+    #             os.mkdir(root, 0o0766 )
+
+    #         for file in torrent_file[b'info'][b'files']:
+    #             path_file = os.path.join(root, *file[b"path"])
+
+    #             if not os.path.exists(os.path.dirname(path_file)):
+    #                 os.makedirs(os.path.dirname(path_file))
+
+    #             self.file_names.append({"path": path_file , "length": file[b"length"]})
+    #             self.total_length += file[b"length"]
+
+    #     else:
+    #         self.file_names.append({"path": root , "length": torrent_file[b'info'][b'length']})
+    #         self.total_length = torrent_file[b'info'][b'length']

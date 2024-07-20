@@ -1,4 +1,6 @@
-bin
-lib
-include
-__pycache__
+.DS_Store
+
+bin/
+lib/
+include/
+__pycache__/
