@@ -17,19 +17,22 @@ async def communicate_with_tracker(tracker_address, left, info_hash, peer_id):
 
 class TrackerProtocol:
     def __init__(self, info_hash, peer_id):
-        self.info_hash = info_hash
-        self.peer_id = peer_id
         self.transport = None
+        
+        self.peer_id = peer_id
+        self.info_hash = info_hash
+        
+        
         self.transaction_id = random.randint(0, 0xFFFFFFFF)
         self.connection_id = 0x41727101980
-        self.connect_event = asyncio.Event()
-        self.announce_event = asyncio.Event() 
+        self.event = asyncio.Event()
 
     async def on_connection_made(self):
         action = 0
         connect_request = struct.pack("!QII", self.connection_id, action, self.transaction_id)
         self.transport.sendto(connect_request)
-        await self.connect_event.wait()
+        await self.event.wait()
+        self.event.clear()
 
     async def on_announce(self, lefty):
         action = 1
@@ -43,7 +46,8 @@ class TrackerProtocol:
         port = 6881
         announce_request = struct.pack("!QII20s20sQQQIIIiH", self.connection_id, action, self.transaction_id, self.info_hash, self.peer_id, downloaded, left, uploaded, event, ip, key, num_want, port)
         self.transport.sendto(announce_request)
-        await self.announce_event.wait()
+        await self.event.wait()
+        self.event.clear()
 
     def connection_made(self, transport):
         self.transport = transport
@@ -58,7 +62,7 @@ class TrackerProtocol:
         if len(data) == 16:
             action, transaction_id, connection_id = struct.unpack('!IIQ', data)
             self.connection_id = connection_id
-            self.connect_event.set()
+            self.event.set()
         elif len(data) >= 20:
             n = len(data) - 20
             fixed_format = '!IIIII'
@@ -77,7 +81,7 @@ class TrackerProtocol:
                 
                 peers.append((ip, port))
             print(peers)
-            self.announce_event.set()
+            self.event.set()
 
 def main():
     
