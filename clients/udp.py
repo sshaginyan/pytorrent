@@ -3,7 +3,7 @@ import random
 import asyncio
 from urllib.parse import urlparse
 
-async def fetch_trackers(url, peer_id, total_length, info_hash):
+async def fetch_peer_list(url, peer_id, total_length, info_hash):
     parsed_url = urlparse(url)
     
     loop = asyncio.get_running_loop()
@@ -83,30 +83,9 @@ class TrackerProtocol:
                 ip = '.'.join(map(str, ip_bytes))
                 port = struct.unpack('!H', port_bytes)[0]
                 
-                peers.append((ip, port))
+                peers.append({"ip": ip, "port": port, "peer_id": None})
             self.event.set()
-            self.peers = peers
-
-def main():
-    
-    tracker_address = ('explodie.org', 6969)
-    left = 276445467
-    info_hash = b'\xdd\x82U\xec\xdc|\xa5_\xb0\xbb\xf8\x13#\xd8pb\xdb\x1fm\x1c'
-    
-    # tracker_address = ('tracker.opentrackr.org', 1337)
-    # left = 2601915325
-    # info_hash = b'u\n\xb8^\x01\xa0\xd4C\xbd\r\x19\xe4\x9b%\x0f\x88\x96\xe1\xe7\x91'
-
-    # tracker_address = ('tracker.opentrackr.org', 1337)
-    # left = 318239939300
-    # info_hash = b'_\x96\xd45v\xe3\xd3\x86\xc9\xbae\xb8\x83!\n9;h!\x0e'
-    
-    # tracker_address = ('open.stealth.si', 80)
-    # left = 1722402549
-    # info_hash = b'+\x17Y\xfc\xfd\x9a\x18p\x95]\xba\x85\xbf\x1fk\xbf\x82\x0eD\xd6'
-
-    peer_id = b"-PT010-\xf2;\xc6\x9d'\x82r\x01X\xbf\x1b*\x98"
-    asyncio.run(communicate_with_tracker(tracker_address, left, info_hash, peer_id))
-
-if __name__ == "__main__":
-    main()
+            self.peers = {
+                "interval": interval,
+                "peers": peers
+            }

@@ -1,19 +1,24 @@
 # https://github.com/Textualize/textual
-import asyncio # Don't need this for now
-from torrent_file import TorrentFile
+import asyncio
 from tracker import Tracker
-from pprint import pprint
-import bencode
+from torrent_file import TorrentFile
+from peers_manager import PeersManager
+from pieces_manager import PiecesManager
 
 async def main():
-    # torrent_file = TorrentFile('Artificial_Intelligence.torrent')
-    torrent_file = TorrentFile('torrents/Artificial_Intelligence.torrent')
+    torrent_file = TorrentFile('torrents/grok.torrent')
+    exit()
     tracker = Tracker(torrent_file)
-    peers = await tracker.get_peers()
-    print(peers)
-    # pprint(bencode.decode(peers))
+    peers_connection_details = await tracker.fetch_tracker()
+    peers_manager = PeersManager(peers_connection_details)
+    peers_manager.create_peers(torrent_file)
+    pieces_manager = PiecesManager(torrent_file)
+    
+    await peers_manager.run_peers()
 
-    # while not pieces_manager.all_pieces_completed():
+    # while not pieces_manager.pieces_completed():
+    #     await asyncio.sleep(5)
+    #     print('Pieces completed: ', pieces_manager.pieces_completed())
     #     for piece in self.pieces_manager.pieces:
     #         index = piece.piece_index
 

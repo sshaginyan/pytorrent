@@ -3,7 +3,6 @@ import os
 import math
 import bencode
 import hashlib
-import functools
 
 class TorrentFile:
     def __init__(self, path):
@@ -13,20 +12,24 @@ class TorrentFile:
         for key, value in torrent_data.items():
             key = key.decode('utf-8')
             setattr(self, "_" + re.sub(r"[ -]", "_", key), value)
+        
+        self.initialize_file_structure(torrent_data)
 
     def _read_file(self, path):
         with open(path, 'rb') as file:
             return file.read()
 
     @property
+    def piece_length(self):
+        return self._info[b"piece length"]
+    
+    @property
     def info_hash(self):
         return hashlib.sha1(bencode.encode(self._info)).digest()
     
     @property
-    @functools.cache
     def announce_list(self):
-        self._announce_list.append([self._announce])
-        return self._announce_list
+        return self._announce_list + [self._announce]
     
     @property
     def total_length(self):
@@ -37,7 +40,11 @@ class TorrentFile:
     
     @property
     def number_of_pieces(self):
-        return math.ceil(self.total_length / self._info[b"piece length"])
+        return math.ceil(self.total_length / self.piece_length)
+
+    @property
+    def pieces(self):
+        return self._info[b"pieces"]
     
     @property
     def peer_id(self):
@@ -46,22 +53,15 @@ class TorrentFile:
         peer_id = client_prefix.encode() + unique_id
         return peer_id
     
-    # def create_files(self, torrent_file):
-    #     root = torrent_file[b'info'][b'name']
+    def initialize_file_structure(self, torrent_data):
+        root = torrent_data[b'info'][b'name']
 
-    #     if b'files' in torrent_file[b'info']:
-    #         if not os.path.exists(root):
-    #             os.mkdir(root, 0o0766 )
+        if b'files' in torrent_data[b'info']:
+            if not os.path.exists(root):
+                os.mkdir(root, 0o0766)
 
-    #         for file in torrent_file[b'info'][b'files']:
-    #             path_file = os.path.join(root, *file[b"path"])
+            for file in torrent_data[b'info'][b'files']:
+                path_file = os.path.join(root, *file[b"path"])
 
-    #             if not os.path.exists(os.path.dirname(path_file)):
-    #                 os.makedirs(os.path.dirname(path_file))
-
-    #             self.file_names.append({"path": path_file , "length": file[b"length"]})
-    #             self.total_length += file[b"length"]
-
-    #     else:
-    #         self.file_names.append({"path": root , "length": torrent_file[b'info'][b'length']})
-    #         self.total_length = torrent_file[b'info'][b'length']
+                if not os.path.exists(path_file):
+                    os.makedirs(path_file)
