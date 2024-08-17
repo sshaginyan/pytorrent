@@ -13,7 +13,7 @@ class TorrentFile:
             key = key.decode('utf-8')
             setattr(self, "_" + re.sub(r"[ -]", "_", key), value)
         
-        self.initialize_file_structure(torrent_data)
+        self.initialize_file_structure()
 
     def _read_file(self, path):
         with open(path, 'rb') as file:
@@ -53,14 +53,14 @@ class TorrentFile:
         peer_id = client_prefix.encode() + unique_id
         return peer_id
     
-    def initialize_file_structure(self, torrent_data):
-        root = torrent_data[b'info'][b'name']
+    def initialize_file_structure(self):
+        root = self._info[b'name']
 
-        if b'files' in torrent_data[b'info']:
+        if b'files' in self._info:
             if not os.path.exists(root):
                 os.mkdir(root, 0o0766)
 
-            for file in torrent_data[b'info'][b'files']:
+            for file in self._info[b'files']:
                 path_file = os.path.join(root, *file[b"path"])
 
                 if not os.path.exists(path_file):
