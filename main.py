@@ -7,7 +7,6 @@ from pieces_manager import PiecesManager
 
 async def main():
     torrent_file = TorrentFile('torrents/grok.torrent')
-    exit()
     tracker = Tracker(torrent_file)
     peers_connection_details = await tracker.fetch_tracker()
     peers_manager = PeersManager(peers_connection_details)
